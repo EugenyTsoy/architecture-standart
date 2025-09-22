@@ -1,0 +1,22 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+LAYOUT_WITH_LEGEND()
+
+Person(customer, "Клиент", "Пользователь, звонит в кол-центр за консультацией")
+Person(internalAgent, "Сотрудник внутреннего кол-центра", "Консультирует клиентов по телефону")
+Person(externalAgent, "Сотрудник партнёрского кол-центра", "Обрабатывает звонки, получает ставки по файлу")
+System(depositService, "Сервис депозитов", "Централизованно хранит и предоставляет ставки")
+System(callCenterSystem, "Система кол-центра", "Отображает ставки для операторов банка")
+System_Ext(externalCCSystem, "Партнёрский кол-центр", "Работает с файлом ставок, нет API")
+System(fileTransferService, "Файловый шлюз", "Передаёт ставки в защищённом виде")
+
+Rel(customer, internalAgent, "Звонит для консультации", "Телефон")
+Rel(customer, externalAgent, "Звонит в партнёрский КЦ", "Телефон")
+
+Rel(internalAgent, callCenterSystem, "Просматривает ставки", "Web UI")
+Rel(callCenterSystem, depositService, "Получает ставки", "REST API")
+
+Rel(depositService, fileTransferService, "Формирует и отправляет файл", "CSV/XLSX по расписанию")
+Rel(fileTransferService, externalCCSystem, "Передаёт ставки", "SFTP + шифрование")
+
+@enduml

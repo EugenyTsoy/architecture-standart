@@ -1,0 +1,47 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+LAYOUT_WITH_LEGEND()
+
+Person(customer, "Клиент", "Физлицо, использующее интернет-банк или сайт для открытия депозитов")
+Person(support, "Служба поддержки", "Помогает клиентам при проблемах с заявками")
+Person(bankEmployee, "Сотрудник бэк-офиса", "Обрабатывает заявки и вводит ставки")
+Person(callCenter, "Сотрудник кол-центра", "Получает заявки с сайта и оформляет их вручную")
+
+System(coreBanking, "АБС", "Автоматизированная банковская система — хранение данных и расчёт депозитов")
+System(emailService, "Email-сервис", "Отправка уведомлений клиентам")
+System(smsService, "SMS-шлюз", "Отправка SMS при открытии депозита")
+System(kafka, "Kafka", "Асинхронная передача заявок между сервисом и АБС")
+System(excelRateSheet, "Excel-файл ставок", "Источник ставок, редактируется сотрудниками")
+
+System_Boundary(b1, "Система онлайн-заявок на депозиты") {
+    System(website, "Публичный сайт", "Маркетинговый сайт банка с возможностью оставить заявку")
+    System(internetBank, "Интернет-банк", "Веб-интерфейс и мобильное приложение для подачи заявок")
+    System(depositService, "Сервис депозитов", "Обработка ставок и маршрутизация заявок")
+    System(integrationLayer, "Интеграционный слой", "Передача заявок в АБС")
+}
+
+Rel(customer, website, "Оставляет заявку", "HTTPS (UI)")
+Rel(website, callCenter, "Передаёт заявку", "Вручную / CRM")
+
+Rel(customer, internetBank, "Подаёт заявку", "HTTPS (UI)")
+Rel(internetBank, depositService, "Передаёт заявку", "REST/JSON")
+
+Rel(bankEmployee, excelRateSheet, "Редактирует ставки", "Excel/ручной ввод")
+Rel(excelRateSheet, depositService, "Импортирует ставки", "XLSX/API")
+Rel(depositService, internetBank, "Передаёт актуальные ставки", "REST")
+Rel(depositService, website, "Передаёт ставки", "REST")
+
+Rel(depositService, kafka, "Публикует заявку", "Kafka Topic")
+Rel(kafka, integrationLayer, "Асинхронно получает заявки", "Kafka Consumer")
+Rel(integrationLayer, coreBanking, "Передаёт в АБС", "SOAP/REST")
+Rel(coreBanking, smsService, "Отправляет SMS", "API")
+Rel(coreBanking, emailService, "Отправляет email", "SMTP/API")
+Rel(coreBanking, internetBank, "Отдаёт статус заявки", "REST")
+Rel(internetBank, customer, "Показывает статус", "UI")
+
+Rel(bankEmployee, coreBanking, "Обрабатывает заявки", "GUI")
+
+Rel(customer, support, "Обращается за помощью", "Телефон/чат")
+
+SHOW_LEGEND()
+@enduml

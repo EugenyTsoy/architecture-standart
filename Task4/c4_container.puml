@@ -1,0 +1,34 @@
+@startuml container_diagram
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+Person(customer, "Клиент", "Человек, желающий открыть депозит")
+Person(backoffice, "Сотрудник банка", "Сотрудник, управляющий ставками и проверяющий заявки")
+System(system, "Система подачи заявок на депозиты")
+
+Container(website, "Сайт", "Web App", "Показывает маркетинговую информацию и ставки, отправляет заявки в кол-центр")
+Container(ibank, "Интернет-банк", "Web App", "Позволяет подать заявку на депозит, показывает ставки")
+Container(depositService, "Сервис депозитов", "FastAPI / Python", "Обрабатывает заявки и предоставляет ставки")
+Container(kafka, "Kafka", "Apache Kafka", "Очередь для асинхронной передачи заявок в АБС")
+Container(coreBanking, "Core Banking System (АБС)", "Legacy", "Основная банковская система, обрабатывающая депозиты")
+Container(rateStorage, "Хранилище ставок", "PostgreSQL", "Содержит актуальные ставки по депозитам")
+Container(rateImporter, "Rate Importer", "Python Script", "Обрабатывает Excel-файлы и обновляет ставки")
+Container(backofficeUI, "Back-office UI", "Web App", "Интерфейс для сотрудников по загрузке ставок и проверке заявок")
+Container(callCenter, "Кол-центр / CRM", "External System", "Обрабатывает заявки с сайта")
+
+Rel(customer, website, "Смотрит ставки и подаёт заявку", "HTTPS")
+Rel(customer, ibank, "Подаёт заявку на депозит", "HTTPS")
+Rel(website, callCenter, "Отправляет заявки", "HTTP / Email / File")
+
+Rel(ibank, depositService, "Отправка заявки", "REST/JSON")
+Rel(depositService, kafka, "Публикует заявки", "Kafka topic: deposit_requests")
+Rel(kafka, coreBanking, "Передаёт заявки асинхронно", "Kafka consumer")
+Rel(depositService, rateStorage, "Читает ставки", "JDBC")
+Rel(rateImporter, rateStorage, "Обновляет ставки", "JDBC")
+Rel(backoffice, backofficeUI, "Управляет ставками и заявками", "HTTPS")
+Rel(backofficeUI, rateImporter, "Загружает Excel-файлы", "Multipart upload")
+Rel(depositService, ibank, "Предоставляет ставки", "REST/JSON")
+Rel(depositService, website, "Предоставляет ставки", "REST/JSON")
+
+@enduml

@@ -1,0 +1,50 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+LAYOUT_WITH_LEGEND()
+
+Person(customer, "Клиент", "Физлицо, использующее сайт или интернет-банк")
+Person(bankEmployee, "Сотрудник банка", "Загружает ставки, обрабатывает заявки")
+Person(callCenter, "Оператор кол-центра", "Принимает заявки с сайта и вводит в систему")
+
+System_Boundary(system, "Система онлайн-заявок на депозиты") {
+
+    Container(webSite, "Сайт", "Next.js/React", "Показывает ставки, перенаправляет на интернет-банк или отправляет заявку в кол-центр")
+    Container(internetBank, "Интернет-банк", "Flutter Web/Mobile", "Позволяет подать заявку и отслеживать статус")
+    Container(offersService, "Сервис ставок по депозитам", "Python FastAPI", "Хранит и отдаёт ставки в ИБ и на сайт")
+    Container(applicationService, "Сервис заявок на депозиты", "Python FastAPI", "Принимает заявки и ставит в очередь Kafka")
+    Container(backOfficeUI, "UI бэк-офиса", "Vue.js", "Позволяет сотрудникам обрабатывать заявки")
+    Container(rateLoader, "Модуль загрузки ставок", "Python script / UI", "Позволяет сотрудникам загружать Excel-файлы со ставками")
+
+    ContainerDb(depositDb, "БД депозитной системы", "PostgreSQL", "Хранит ставки и заявки")
+    Container(kafka, "Kafka", "Kafka", "Передаёт заявки в АБС асинхронно")
+
+}
+
+System_Ext(coreBanking, "АБС", "Обработка заявок, расчёты депозитов")
+System_Ext(emailService, "Email-сервис", "Отправка email клиентам")
+System_Ext(smsService, "SMS-шлюз", "Отправка SMS уведомлений")
+
+Rel(customer, webSite, "Просматривает ставки, оставляет заявки", "HTTPS")
+Rel(customer, internetBank, "Подаёт заявку", "HTTPS")
+Rel(webSite, applicationService, "Отправляет заявки", "REST/JSON")
+Rel(webSite, offersService, "Запрашивает ставки", "REST/JSON")
+Rel(internetBank, offersService, "Запрашивает ставки", "REST/JSON")
+Rel(internetBank, applicationService, "Отправляет заявки", "REST/JSON")
+
+Rel(bankEmployee, rateLoader, "Загружает ставки из Excel", "Web UI")
+Rel(rateLoader, offersService, "Передаёт ставки", "REST")
+Rel(bankEmployee, backOfficeUI, "Обрабатывает заявки", "Web UI")
+Rel(backOfficeUI, applicationService, "Получает заявки", "REST")
+
+Rel(applicationService, kafka, "Публикует заявки", "Kafka topic")
+Rel(kafka, coreBanking, "Передаёт заявки асинхронно", "Kafka consumer")
+Rel(coreBanking, smsService, "Отправляет SMS", "API")
+Rel(coreBanking, emailService, "Отправляет email", "SMTP")
+Rel(coreBanking, emailService, "Отправляет email", "SMTP")
+
+Rel(offersService, depositDb, "Читает/пишет ставки", "SQL")
+Rel(applicationService, depositDb, "Читает/пишет заявки", "SQL")
+Rel(callCenter, webSite, "Принимает заявки с сайта", "Web UI")
+
+
+@enduml
